@@ -20,10 +20,13 @@ class Encoder(nn.Module):
         self.layer6 = nn.Sequential(ResBlock(512, 512))
         self.layer7 = nn.Sequential(ResBlock(512, 512, pool_stride=4))
         self.conv2 = nn.Conv2d(512, 512, kernel_size=4, stride=2, padding=2)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.bn2 = nn.BatchNorm2d(512)
         self.magnitude_mlp = MultiLayerPerceptron(input_size=512, hidden_size=512, magnitudes=20)
 
     def forward(self, x, is_Source):
         x = self.conv1(x)
+        x = self.bn1(x)
         x = F.relu(x)
         x_enc6 = self.layer1(x)
         x_enc5 = self.layer2(x_enc6)
@@ -33,6 +36,7 @@ class Encoder(nn.Module):
         x_enc1 = self.layer6(x_enc2)
         x = self.layer7(x_enc1)
         x = self.conv2(x)
+        x = self.bn2(x)
         x = F.relu(x)
         x = x.view(x.size(0), -1)
         if is_Source:

@@ -3,6 +3,7 @@ import torch
 from torch import nn
 import numpy as np
 
+
 # SEED_RANDOM_DIRS = 2
 #
 #
@@ -61,10 +62,13 @@ class LinearMotionDecomposition(nn.Module):
     MOTION_DICTIONARY_SIZE = 20
     MOTION_DICTIONARY_DIMENSION = 512
 
+    #self.register_parameter(name='bias', param=torch.nn.Parameter(torch.randn(3)))
+
     def __init__(self):
         super(LinearMotionDecomposition, self).__init__()
-        self.motion_dictionary = torch.nn.Parameter(initial_directions(self.MOTION_DICTIONARY_DIMENSION,
-                                                                       self.MOTION_DICTIONARY_SIZE, device='cpu'))
+        self.motion_dictionary = torch.nn.Parameter(
+            initial_directions(self.MOTION_DICTIONARY_DIMENSION, self.MOTION_DICTIONARY_SIZE, device='cpu'),
+            requires_grad=True)
 
     @staticmethod
     def generate_latent_path(self, magnitudes):

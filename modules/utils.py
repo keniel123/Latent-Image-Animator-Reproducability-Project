@@ -12,15 +12,21 @@ class ResBlock(nn.Module):
         self.residual = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0, stride=1)
         self.pool1 = nn.MaxPool2d(kernel_size=3, stride=pool_stride, padding=0)
         self.pool2 = nn.MaxPool2d(kernel_size=1, stride=pool_stride, padding=0)  ##used to downsample in resblock
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.bn3 = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
         residual = self.residual(x)
         out = self.conv1(x)
+        out = nn.BatchNorm2d(out)
         out = F.relu(out)
         out = self.conv2(out)
+        out = nn.BatchNorm2d(out)
         out = F.relu(out)
         out = self.pool1(out)
         residual = self.pool2(residual)
+        residual = nn.BatchNorm2d(residual)
         out += residual
         out = F.relu(out)
         return out
