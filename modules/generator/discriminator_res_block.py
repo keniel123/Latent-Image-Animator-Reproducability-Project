@@ -1,22 +1,22 @@
-import self as self
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from generator_utils import Warp, StyleConv, UpConv
+from generator.generator_utils import StyleConv, Warp, UpConv
 
 
-class GeneratorResidualBlock(nn.Module):
-
+class DiscriminatorResidualBlock(nn.Module):
     def __init__(self, num_input, num_output, kernel_size):
         super().__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=num_input, out_channels=num_output, kernel_size=kernel_size, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(in_channels=num_output, out_channels=num_output, kernel_size=kernel_size, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(in_channels=num_input, out_channels=num_output, kernel_size=kernel_size, stride=1,
+                               padding=1)
+        self.conv2 = nn.Conv2d(in_channels=num_output, out_channels=num_output, kernel_size=kernel_size, stride=1,
+                               padding=1)
         self.bn1 = nn.BatchNorm2d(num_input)
         self.bn2 = nn.BatchNorm2d(num_input)
 
-    def forward(self, x_enc, s, u, first_block=False, last_block=False):
+    def forward(self, s, u, first_block=False, last_block=False):
         flow_field = []
         style_conv_out = StyleConv(s)
         style_conv_out = self.conv2(style_conv_out)
@@ -31,7 +31,7 @@ class GeneratorResidualBlock(nn.Module):
             m = torch.sigmoid(masked_field)
             phi = torch.tanh(flow_field)
 
-            warped_image = Warp.warp_image(phi, x_enc, m)
+            warped_image = Warp.warp_image(phi, s, m)
 
             warped_image = self.conv2(warped_image)
             warped_image = self.bn2(warped_image)

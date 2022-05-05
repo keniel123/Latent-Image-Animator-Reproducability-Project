@@ -66,26 +66,3 @@ class Warp(nn.Module):
 
         return output * m
 
-
-class Residual(nn.Module):
-    """The Residual block of ResNet."""
-
-    def __init__(self, input_channels, num_channels):
-        super().__init__()
-        self.conv1 = nn.Conv2d(input_channels, num_channels,
-                               kernel_size=3, padding=1, stride=1)
-        self.conv2 = nn.Conv2d(num_channels, num_channels,
-                               kernel_size=3, padding=1)
-        """BatchNorm2d is the number of dimensions/channels
-         that output from the last layer and come in to the batch norm layer"""
-        self.bn1 = nn.BatchNorm2d(num_channels)
-        self.bn2 = nn.BatchNorm2d(num_channels)
-
-    def forward(self, x):
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = F.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = F.relu(out)
-        return out

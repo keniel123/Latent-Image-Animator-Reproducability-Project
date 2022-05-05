@@ -1,28 +1,27 @@
 import torch
 
-from generator.generator_res_block import ResidualBlock
+from torch import nn
 
-"x is z(s->t), x_enc is from encoder"
+from generator.generator_res_block import GeneratorResidualBlock
 
 
-def Generator():
-    x_s_to_d = torch.Tensor()
-    x_enc = torch.tensor()
+class Generator(nn.Module):
+    def __init__(self):
+        super.__init__()
+        self.layer1 = nn.Sequential(GeneratorResidualBlock(512, 512, kernel_size=3))
+        self.layer2 = nn.Sequential(GeneratorResidualBlock(512, 512, kernel_size=3))
+        self.layer3 = nn.Sequential(GeneratorResidualBlock(512, 512, kernel_size=3))
+        self.layer4 = nn.Sequential(GeneratorResidualBlock(512, 512, kernel_size=3))
+        self.layer5 = nn.Sequential(GeneratorResidualBlock(512, 256, kernel_size=3))
+        self.layer6 = nn.Sequential(GeneratorResidualBlock(256, 128, kernel_size=3))
+        self.layer7 = nn.Sequential(GeneratorResidualBlock(128, 64, kernel_size=3))
 
-    for i in range(0, 6):
-        if i == 0:
-            style_conv_output1, up_conv_output1 = (ResidualBlock(4, 3, x_enc, firstBlock=True))
-        if i == 1:
-            style_conv_output2, up_conv_output2 = (ResidualBlock(8, 3, x_enc, style_conv_output1, up_conv_output1))
-        elif i == 2:
-            style_conv_output3, up_conv_output3 = (ResidualBlock(16, 3, x_enc, style_conv_output2, up_conv_output2))
-        elif i == 3:
-            style_conv_output4, up_conv_output4 = (ResidualBlock(32, 3, x_enc, style_conv_output3, up_conv_output3))
-        elif i == 4:
-            style_conv_output5, up_conv_output5 = (ResidualBlock(64, 3, x_enc, style_conv_output4, up_conv_output4))
-        elif i == 5:
-            style_conv_output6, up_conv_output6 = (ResidualBlock(128, 3, x_enc, style_conv_output5, up_conv_output5))
-        elif i == 6:
-            x_s_to_d = ResidualBlock(256, (3, 3), x_enc, style_conv_output6, up_conv_output6, lastBlock=True)[1]
-
-    return x_s_to_d
+    def forward(self, x_enc, z_st_to_d):
+        s1, u1 = self.layer1(x_enc, z_st_to_d, firstBlock=True)
+        s2, u2 = self.layer2(x_enc, s1, u1)
+        s3, u3 = self.layer3(x_enc, s2, u2)
+        s4, u4 = self.layer4(x_enc, s3, u3)
+        s5, u5 = self.layer5(x_enc, s4, u4)
+        s6, u6 = self.layer6(x_enc, s5, u5)
+        _, u7 = self.layer7(x_enc, s6, u6, lastBlock=True)
+        return u7
