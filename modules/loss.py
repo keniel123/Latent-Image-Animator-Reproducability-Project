@@ -50,7 +50,9 @@ class LossFunctions:
         super(LossFunctions, self).__init__()
 
     def reconstruction_loss(self, reconstructed_image, target_image):
-        return torch.sqrt(torch.mean(torch.abs(reconstructed_image - target_image).pow(2)))
+        loss = nn.L1Loss(reduction='sum')
+        #return torch.sqrt(torch.mean(torch.abs(reconstructed_image - target_image).pow(2)))
+        return loss(reconstructed_image, target_image)
 
     def perceptual_loss(self, reconstructed_image, target_image):
         vgg19Loss = VGGPerceptualLoss()

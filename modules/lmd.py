@@ -82,8 +82,8 @@ class LinearMotionDecomposition(nn.Module):
                 Z[i, j] = total
         return Z
 
-    def generate_target_code(self, si_latent_code, magnitudes):
-        return si_latent_code + self.generate_latent_path(magnitudes)
+    def generate_target_code(self, source_latent_code, magnitudes):
+        return source_latent_code + self.generate_latent_path(magnitudes)
 
     def forward(self, x, magnitudes):
         self.motion_dictionary = adjust_sign(*QR_Decomposition(self.motion_dictionary))
