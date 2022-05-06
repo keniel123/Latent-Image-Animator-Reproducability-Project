@@ -1,55 +1,25 @@
-import torch
 from torch import nn
-from torch.nn import functional as F
 
-from generator.generator_utils import StyleConv, Warp, UpConv
+from generator.discriminator_res_block import DiscriminatorResidualBlock
 
 
 class Discriminator(nn.Module):
-    def __init__(self, num_input, kernel_size, x_enc, style_conv_output, up_conv_output, firstBlock=False,
-                 lastBlock=False):
-        super().__init__()
+    def __init__(self):
+        super(Discriminator, self).__init__()
+        self.layer1 = nn.Sequential(DiscriminatorResidualBlock(512, 512, kernel_size=3))
+        self.layer2 = nn.Sequential(DiscriminatorResidualBlock(512, 512, kernel_size=3))
+        self.layer3 = nn.Sequential(DiscriminatorResidualBlock(512, 512, kernel_size=3))
+        self.layer4 = nn.Sequential(DiscriminatorResidualBlock(512, 512, kernel_size=3))
+        self.layer5 = nn.Sequential(DiscriminatorResidualBlock(512, 256, kernel_size=3))
+        self.layer6 = nn.Sequential(DiscriminatorResidualBlock(256, 128, kernel_size=3))
+        self.layer7 = nn.Sequential(DiscriminatorResidualBlock(128, 64, kernel_size=3))
 
-        self.conv1 = nn.Conv2d(num_input, num_input * 2, kernel_size=kernel_size, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(num_input * 2, num_input * 2, kernel_size=kernel_size, stride=1, padding=1)
-        self.bn1 = nn.BatchNorm2d(num_input * 2)
-        self.bn2 = nn.BatchNorm2d(num_input * 2)
-        self.x_enc = x_enc
-        self.first_block = firstBlock
-        self.last_block = lastBlock
-        self.style_conv_output = style_conv_output
-        self.up_conv_output = up_conv_output
-
-
-    def forward(self, x):
-        flow_field = []
-        # TODO - Send params to StyleConv zs->t and xi
-        style_conv_out = StyleConv(x)
-        style_conv_out = self.conv2(style_conv_out)
-        style_conv_out = self.bn2(style_conv_out)
-        style_conv_out = F.relu(style_conv_out)
-
-        if not self.first_block:
-            masked_field = style_conv_out.children()[0]
-            flow_field.append(style_conv_out.children()[1])
-            flow_field.append(style_conv_out.children()[2])
-
-            m = torch.sigmoid(masked_field)
-            phi = torch.tanh(flow_field)
-
-            warped_image = Warp.warp_image(phi, self.x_enc, m)
-
-            warped_image = self.conv2(warped_image)
-            warped_image = self.bn2(warped_image)
-            warped_image = F.relu(warped_image)
-
-            to_rgb = warped_image + self.generatorout
-            if self.last_block:
-                return None, to_rgb
-            up_conv_output = UpConv(to_rgb)
-            style_conv_out = warped_image + style_conv_out
-        else:
-            up_conv_output = UpConv(style_conv_out)
-            style_conv_out = style_conv_out
-
-        return style_conv_out, up_conv_output
+    def forward(self, x_enc):
+        s1, u1 = self.layer1(x_enc)
+        s2, u2 = self.layer2(x_enc, s1, u1, first_block=True)
+        s3, u3 = self.layer3(x_enc, s2, u2)
+        s4, u4 = self.layer4(x_enc, s3, u3)
+        s5, u5 = self.layer5(x_enc, s4, u4)
+        s6, u6 = self.layer6(x_enc, s5, u5)
+        _, u7 = self.layer7(x_enc, s6, u6, last_block=True)
+        return u7

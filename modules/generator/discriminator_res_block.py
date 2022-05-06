@@ -1,16 +1,12 @@
-import self as self
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from generator_utils import Warp, StyleConv, UpConv
+from generator.generator_utils import StyleConv, Warp, UpConv
 
 
-class GeneratorResidualBlock(nn.Module):
-
+class DiscriminatorResidualBlock(nn.Module):
     def __init__(self, num_input, num_output, kernel_size):
-        super(GeneratorResidualBlock, self).__init__()
-
         self.conv1 = nn.Conv2d(in_channels=num_input, out_channels=num_output, kernel_size=kernel_size, stride=1,
                                padding=1)
         self.conv2 = nn.Conv2d(in_channels=num_output, out_channels=2, kernel_size=kernel_size, stride=1, padding=1)
@@ -63,6 +59,5 @@ class GeneratorResidualBlock(nn.Module):
             style_conv_out = F.relu(style_conv_out)
             up_conv_output = self.upConv(style_conv_out)
             style_conv_out = style_conv_out
-        print(style_conv_out.shape, up_conv_output.shape)
+        print(style_conv_out, up_conv_output)
         return style_conv_out, up_conv_output
-
