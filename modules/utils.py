@@ -1,6 +1,10 @@
 from torch import nn
 import torch.nn.functional as F
 from torch.nn import BatchNorm2d
+import torch
+import math
+
+from modules.style_conv_utils.upfirdn2d import upfirdn2d
 
 
 class ResBlock(nn.Module):
@@ -52,3 +56,131 @@ class MultiLayerPerceptron(nn.Module):
         out = F.relu(out)
         out = self.fc5(out)
         return out
+
+
+class ImagePyramid(torch.nn.Module):
+    """
+    Create image pyramide for computing pyramide perceptual loss.
+    """
+
+    def __init__(self, scales, num_channels):
+        super(ImagePyramid, self).__init__()
+        downs = {}
+        for scale in scales:
+            downs[str(scale).replace('.', '-')] = AntiAliasInterpolation2d(num_channels, scale)
+        self.downs = nn.ModuleDict(downs)
+
+    def forward(self, x):
+        out_dict = {}
+        for scale, down_module in self.downs.items():
+            out_dict['prediction_' + str(scale).replace('-', '.')] = down_module(x)
+        return out_dict
+
+
+class AntiAliasInterpolation2d(nn.Module):
+    """
+    Band-limited downsampling, for better preservation of the input signal.
+    """
+
+    def __init__(self, channels, scale):
+        super(AntiAliasInterpolation2d, self).__init__()
+        sigma = (1 / scale - 1) / 2
+        kernel_size = 2 * round(sigma * 4) + 1
+        self.ka = kernel_size // 2
+        self.kb = self.ka - 1 if kernel_size % 2 == 0 else self.ka
+
+        kernel_size = [kernel_size, kernel_size]
+        sigma = [sigma, sigma]
+        # The gaussian kernel is the product of the
+        # gaussian function of each dimension.
+        kernel = 1
+        meshgrids = torch.meshgrid(
+            [
+                torch.arange(size, dtype=torch.float32)
+                for size in kernel_size
+            ]
+        )
+        for size, std, mgrid in zip(kernel_size, sigma, meshgrids):
+            mean = (size - 1) / 2
+            kernel *= torch.exp(-(mgrid - mean) ** 2 / (2 * std ** 2))
+
+        # Make sure sum of values in gaussian kernel equals 1.
+        kernel = kernel / torch.sum(kernel)
+        # Reshape to depthwise convolutional weight
+        kernel = kernel.view(1, 1, *kernel.size())
+        kernel = kernel.repeat(channels, *[1] * (kernel.dim() - 1))
+
+        self.register_buffer('weight', kernel)
+        self.groups = channels
+        self.scale = scale
+        inv_scale = 1 / scale
+        self.int_inv_scale = int(inv_scale)
+
+    def forward(self, input):
+        if self.scale == 1.0:
+            return input
+
+        out = F.pad(input, (self.ka, self.kb, self.ka, self.kb))
+        out = F.conv2d(out, weight=self.weight, groups=self.groups)
+        out = out[:, :, ::self.int_inv_scale, ::self.int_inv_scale]
+
+        return out
+
+
+class ToRGB(nn.Module):
+    def __init__(self,
+                 in_channel,
+                 style_dim,
+                 upsample=True,
+                 blur_kernel=[1, 3, 3, 1]):
+        super().__init__()
+        if upsample:
+            self.upsample = Upsample(blur_kernel)
+        self.conv = ModulatedConv2d(in_channel,
+                                    3,
+                                    1,
+                                    style_dim,
+                                    demodulate=False)
+        self.bias = nn.Parameter(torch.zeros(1, 3, 1, 1))
+
+    def forward(self, input, style, skip=None):
+        out = self.conv(input, style)
+        out = out + self.bias
+        if skip is not None:
+            skip = self.upsample(skip)
+            out = out + skip
+        return out
+
+
+
+
+
+def flow_warp( x, warped_conv, padding_mode='zeros'):
+    """Warp an image or feature map with optical flow
+    Args:
+        x (Tensor): size (n, c, h, w)
+        flow (Tensor): size (n, 2, h, w), values range from -1 to 1 (relevant to image width or height)
+        padding_mode (str): 'zeros' or 'border'
+
+    Returns:
+        Tensor: warped image or feature map
+    """
+    phi = torch.tanh(torch.tensor(warped_conv[0][0:1]))
+
+    m = torch.sigmoid(torch.tensor(warped_conv[0][2]))
+    # print(x.size()[-2:], flow.size()[-2:])
+    assert x.size()[-2:] == phi.size()[-2:]
+    n = 1
+    _, _, h, w = x.size()
+    x_ = torch.arange(w).view(1, -1).expand(h, -1)
+    y_ = torch.arange(h).view(-1, 1).expand(-1, w)
+    grid = torch.stack([x_, y_], dim=0).float()
+    grid = grid.unsqueeze(0).expand(n, -1, -1, -1)
+    grid[:, 0, :, :] = 2 * grid[:, 0, :, :] / (w - 1) - 1
+    grid[:, 1, :, :] = 2 * grid[:, 1, :, :] / (h - 1) - 1
+    grid += 2 * phi
+    grid = grid.permute(0, 2, 3, 1)
+    warped_image = F.grid_sample(x, grid)
+    raw_masked_image = warped_image * m
+    return raw_masked_image
+

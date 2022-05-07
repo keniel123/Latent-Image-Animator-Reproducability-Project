@@ -5,6 +5,8 @@ import torch
 import torchvision
 import torch.nn.functional as F
 
+from modules.utils import ImagePyramid
+
 
 class VGGPerceptualLoss(torch.nn.Module):
     def __init__(self, resize=False):
@@ -56,6 +58,10 @@ class LossFunctions:
 
     def perceptual_loss(self, reconstructed_image, target_image):
         vgg19Loss = VGGPerceptualLoss()
+        pyramid = ImagePyramid([1, 0.5, 0.25, 0.125], 256)
+        if torch.cuda.is_available():
+            pyramid = pyramid.cuda()
+            vgg = vgg.cuda()
         return vgg19Loss(reconstructed_image, target_image)
 
     def adversarial_loss(self, prediction):

@@ -35,8 +35,8 @@ def main():
     criterion = nn.BCE()
 
     # define optimisers
-    generator_optimiser = optim.Adam(chain(source_Encoder.parameters(), driver_Encoder.parameters(), lr=1e-3))
-    discriminator_optimiser = optim.Adam(discriminator.parameters())
+    generator_optimiser = optim.Adam(chain(source_Encoder.parameters(), driver_Encoder.parameters(), lr=2e-3))
+    discriminator_optimiser = optim.Adam(discriminator.parameters(),lr=2e-3)
 
     # get training set
     training_set = get_training_set(TRAINING_IMAGES_VIDEOS_SET_FOLDER)
@@ -66,6 +66,9 @@ def main():
                 generator_loss = loss.loss_function(reconstructed_image, driving_image)
                 generator_loss.backward()
                 generator_optimiser.step()
+
+                loss_values = [val.mean() for val in losses.values()]
+                loss = sum(loss_values)
 
                 # keep track of the loss and update the stats
                 generator_losses.append(generator_loss.item())
