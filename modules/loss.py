@@ -52,16 +52,12 @@ class LossFunctions:
         super(LossFunctions, self).__init__()
 
     def reconstruction_loss(self, reconstructed_image, target_image):
-        loss = nn.L1Loss(reduction='sum')
+        loss = nn.L1Loss(reduction='mean')
         #return torch.sqrt(torch.mean(torch.abs(reconstructed_image - target_image).pow(2)))
         return loss(reconstructed_image, target_image)
 
     def perceptual_loss(self, reconstructed_image, target_image):
         vgg19Loss = VGGPerceptualLoss()
-        pyramid = ImagePyramid([1, 0.5, 0.25, 0.125], 256)
-        if torch.cuda.is_available():
-            pyramid = pyramid.cuda()
-            vgg = vgg.cuda()
         return vgg19Loss(reconstructed_image, target_image)
 
     def adversarial_loss(self, prediction):

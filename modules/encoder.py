@@ -9,9 +9,9 @@ import torchbearer
 
 
 class Encoder(nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, isSource):
         super(Encoder, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
         self.layer1 = nn.Sequential(ResBlock(64, 128))
         self.layer2 = nn.Sequential(ResBlock(128, 256))
         self.layer3 = nn.Sequential(ResBlock(256, 512))
@@ -19,15 +19,20 @@ class Encoder(nn.Module):
         self.layer5 = nn.Sequential(ResBlock(512, 512))
         self.layer6 = nn.Sequential(ResBlock(512, 512))
         self.layer7 = nn.Sequential(ResBlock(512, 512, pool_stride=4))
-        self.conv2 = nn.Conv2d(512, 512, kernel_size=4, stride=2, padding=2)
+        self.conv2 = nn.Conv2d(512, 512, kernel_size=4, padding=2, stride=2)
         self.bn1 = nn.BatchNorm2d(64)
         self.bn2 = nn.BatchNorm2d(512)
         self.magnitude_mlp = MultiLayerPerceptron(input_size=512, hidden_size=512, magnitudes=20)
+        self.isSource = isSource
 
-    def forward(self, x, is_Source):
+    def forward(self, x):
+        x = x.unsqueeze(0)  # unsqueeze to return batch
+        # print("unsqueeze conv.  ", x.shape)
         x = self.conv1(x)
+        # print("first conv.  ", x.shape)
         x = self.bn1(x)
         x = F.relu(x)
+
         x_enc6 = self.layer1(x)
         x_enc5 = self.layer2(x_enc6)
         x_enc4 = self.layer3(x_enc5)
@@ -36,11 +41,10 @@ class Encoder(nn.Module):
         x_enc1 = self.layer6(x_enc2)
         x = self.layer7(x_enc1)
         x = self.conv2(x)
-        x = self.bn2(x)
         x = F.relu(x)
         x = x.view(x.size(0), -1)
-        if is_Source:
-            return x
+        if self.isSource:
+            return [x_enc1, x_enc2, x_enc3, x_enc4, x_enc5, x_enc6], x
         else:
             magnitudes = self.magnitude_mlp(x)
-            return [x_enc1, x_enc2, x_enc3, x_enc4, x_enc5, x_enc6], magnitudes
+            return magnitudes

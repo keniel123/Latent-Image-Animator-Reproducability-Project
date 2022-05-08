@@ -4,33 +4,34 @@ from torch.nn import BatchNorm2d
 import torch
 import math
 
-from modules.style_conv_utils.upfirdn2d import upfirdn2d
-
 
 class ResBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, pool_stride=2):
         super(ResBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=2, stride=1)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, stride=1)
-        self.residual = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0, stride=1)
-        self.pool1 = nn.MaxPool2d(kernel_size=3, stride=pool_stride, padding=0)
-        self.pool2 = nn.MaxPool2d(kernel_size=1, stride=pool_stride, padding=0)  ##used to downsample in resblock
+        self.residual = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.pool1 = nn.MaxPool2d(pool_stride)
+        self.pool2 = nn.MaxPool2d(pool_stride)  ##used to downsample in resblock
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.bn3 = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
         residual = self.residual(x)
+
         out = self.conv1(x)
-        out = nn.BatchNorm2d(out)
+        # print(out.shape)
+        out = self.bn1(out)
         out = F.relu(out)
         out = self.conv2(out)
-        out = nn.BatchNorm2d(out)
+        out = self.bn2(out)
         out = F.relu(out)
         out = self.pool1(out)
         residual = self.pool2(residual)
-        residual = nn.BatchNorm2d(residual)
+        # print("res.  " ,residual.shape)
+        # residual = self.bn3(residual)
         out += residual
         out = F.relu(out)
         return out
@@ -127,35 +128,7 @@ class AntiAliasInterpolation2d(nn.Module):
         return out
 
 
-class ToRGB(nn.Module):
-    def __init__(self,
-                 in_channel,
-                 style_dim,
-                 upsample=True,
-                 blur_kernel=[1, 3, 3, 1]):
-        super().__init__()
-        if upsample:
-            self.upsample = Upsample(blur_kernel)
-        self.conv = ModulatedConv2d(in_channel,
-                                    3,
-                                    1,
-                                    style_dim,
-                                    demodulate=False)
-        self.bias = nn.Parameter(torch.zeros(1, 3, 1, 1))
-
-    def forward(self, input, style, skip=None):
-        out = self.conv(input, style)
-        out = out + self.bias
-        if skip is not None:
-            skip = self.upsample(skip)
-            out = out + skip
-        return out
-
-
-
-
-
-def flow_warp( x, warped_conv, padding_mode='zeros'):
+def flow_warp(x, warped_conv, padding_mode='zeros'):
     """Warp an image or feature map with optical flow
     Args:
         x (Tensor): size (n, c, h, w)
@@ -183,4 +156,3 @@ def flow_warp( x, warped_conv, padding_mode='zeros'):
     warped_image = F.grid_sample(x, grid)
     raw_masked_image = warped_image * m
     return raw_masked_image
-

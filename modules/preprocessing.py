@@ -2,13 +2,15 @@ from os.path import isfile, join
 import cv2
 import time
 import os
+from torchvision import transforms
+
 
 TRAINING_SET_FOLDER = "../training"
 GENERATED_DATA_SET_FOLDER = "../training/generated"
-TRAINING_IMAGES_VIDEOS_SET_FOLDER = "../training/training_images"
+TRAINING_IMAGES_VIDEOS_SET_FOLDER = "training/training_images"
 GENERATED_FRAMES_FOLDER = "/frames"
 GENERATED_VIDEOS_FOLDER = "/video"
-VIDEO_DATASET_FOLDER = "/dataset/videos"
+VIDEO_DATASET_FOLDER = "../dataset/videos"
 
 
 def resize_video(path, filename, new_path):
@@ -100,6 +102,10 @@ def generate_frames_from_videos(folder):
 
 
 def get_training_set(training_folder):
+    # Define a transform to convert the image to tensor
+    transform = transforms.ToTensor()
+    # Convert the image to PyTorch tensor
+    print(training_folder)
     training_images = []
     temp_images = []
     training_list = os.listdir(training_folder)
@@ -109,12 +115,10 @@ def get_training_set(training_folder):
             files.sort(key=lambda x: int(float(x.split('.')[0])))
             for file in files:
                 if not file.startswith("."):
-                    img = cv2.imread(training_folder + "/" + folder + "/" + file)
+                    img = transform(cv2.imread(training_folder + "/" + folder + "/" + file))
                     temp_images.append(img)
             training_images.append(temp_images)
     return training_images
-
-
 
 
 

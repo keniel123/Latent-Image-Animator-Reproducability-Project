@@ -28,7 +28,7 @@ def QR_Decomposition(A):
     u[:, 0] = A[:, 0]
     Q[:, 0] = u[:, 0] / torch.linalg.norm(u[:, 0])
     for i in range(1, n):
-        print(i)
+        #print(i)
         u[:, i] = A[:, i]
         for j in range(i):
             u[:, i] -= (A[:, i] @ Q[:, j]) * Q[:, j]  # get each u vector
@@ -58,7 +58,6 @@ def adjust_sign(Q, R):
 
 
 class LinearMotionDecomposition(nn.Module):
-    motion_dictionary = []
     MOTION_DICTIONARY_SIZE = 20
     MOTION_DICTIONARY_DIMENSION = 512
 
