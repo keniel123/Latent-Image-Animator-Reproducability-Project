@@ -105,6 +105,6 @@ class Discriminator(nn.Module):
         out = self.conv(out)
         out = self.conv1(out)
         out = torch.sigmoid(out)
-        print(out)
+        #print(out)
         return out
 

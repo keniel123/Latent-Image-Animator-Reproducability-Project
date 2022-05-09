@@ -2,9 +2,10 @@
 from torch import nn
 import torch
 import torch.nn.functional as F
-from utils import AntiAliasInterpolation2d
 from torchvision import models
 import numpy as np
+
+from modules.utils import AntiAliasInterpolation2d
 
 
 class Vgg19(torch.nn.Module):
@@ -76,14 +77,12 @@ class LossModel(torch.nn.Module):
     Merge all updates into single model for better multi-gpu usage
     """
 
-    def __init__(self, generator, train_params):
+    def __init__(self):
         super(LossModel, self).__init__()
-
-        self.generator = generator
-        self.train_params = train_params
+        train_params = { "scales": [1, 0.5, 0.25, 0.125], "loss_weights": {"perceptual": [10, 10, 10, 10, 10], "reconstruction": 10,"adversarial_loss": 10}}
         self.scales = train_params['scales']
         self.recon_loss = nn.L1Loss(reduction='mean')
-        self.pyramid = ImagePyramid(self.scales, generator.num_channels)
+        self.pyramid = ImagePyramid(self.scales, 3)
         if torch.cuda.is_available():
             self.pyramid = self.pyramid.cuda()
         self.loss_weights = train_params['loss_weights']

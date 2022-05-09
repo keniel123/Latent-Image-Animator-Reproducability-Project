@@ -29,6 +29,7 @@ class Encoder(nn.Module):
         x = x.unsqueeze(0)  # unsqueeze to return batch
         # print("unsqueeze conv.  ", x.shape)
         x_enc6 = self.conv1(x)
+        #print("enc drive     " ,x_enc6.shape)
         # print("first conv.  ", x.shape)
         x = self.bn1(x_enc6)
         x = F.relu(x)

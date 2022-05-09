@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from modules.generator import Generator
 from modules.lmd import LinearMotionDecomposition
 from modules.loss import LossFunctions
+from modules.lossf import LossModel
 import os
 import cv2
 import sys
@@ -33,7 +34,7 @@ def main():
     driver_Encoder = Encoder(3, False)
 
     discriminator = Discriminator()
-    loss = LossFunctions()
+    loss = LossModel()
     lmd = LinearMotionDecomposition()
     generator = Generator()
 
@@ -54,9 +55,9 @@ def main():
         for i in range(len(training_set)):
             source_image, driving_frames = training_set[i][0], training_set[i][1:]
             for driving_image in driving_frames:
+                # driving_image = driving_image.unsqueeze(0)
                 generator_optimiser.zero_grad()
                 discriminator_optimiser.zero_grad()
-                # print(driving_image)
                 source_features, source_latent_code = source_Encoder(source_image)
 
                 motion_magnitudes = driver_Encoder(driving_image)
@@ -64,7 +65,7 @@ def main():
                 target_latent_code = lmd.generate_target_code(source_latent_code, motion_magnitudes)
 
                 reconstructed_image = generator(source_features, target_latent_code)
-                discriminator_real = discriminator(driving_image).reshape(-1)
+                discriminator_real = discriminator(driving_image.unsqueeze(0)).reshape(-1)
                 discriminator_fake = discriminator(reconstructed_image).reshape(-1)
 
                 discriminator_loss_real = criterion(discriminator_real, torch.ones_like(discriminator_real))
@@ -73,33 +74,33 @@ def main():
                 discriminator_loss.backward(retain_graph=True)
                 discriminator_optimiser.step()
 
-
-                test_loss = LossModel()
-                print("test losss     " ,test_loss(reconstructed_image,driving_image,discriminator_fake))
-                generator_loss = loss.loss_function(reconstructed_image, driving_image, discriminator_fake)
+                gen_losses = loss(reconstructed_image, driving_image.unsqueeze(0), discriminator_fake)
+                loss_values = [val.mean() for val in gen_losses.values()]
+                generator_loss = sum(loss_values)
                 generator_loss.backward()
                 generator_optimiser.step()
-                print(generator_loss)
-                sys.exit()
-                break
-        #
-        #         # loss_values = [val.mean() for val in losses.values()]
-        #         # loss = sum(loss_values)
-        #
-        #         # keep track of the loss and update the stats
-        #         generator_losses.append(generator_loss.item())
-        #         discriminator_losses.append(discriminator_loss.item())
-        #             print(reconstructed_image[0].shape)
-        #             save_image(reconstructed_image[0], GENERATED_DATA_SET_FOLDER + "/%#05d.jpg" % (i))
+
+                # keep track of the loss and update the stats
+                generator_losses.append(generator_loss.item())
+                discriminator_losses.append(discriminator_loss.item())
+
+                # save_image_to_folder(
+                #     GENERATED_DATA_SET_FOLDER + "/{}/{}".format(epoch, i) + GENERATED_FRAMES_FOLDER
+                #     , epoch, i,
+                #     reconstructed_image.detach().numpy())
+
+                save_image(reconstructed_image[0],
+                           GENERATED_DATA_SET_FOLDER + "/{}.jpg".format(i))
+
         #             save_image_to_folder(GENERATED_DATA_SET_FOLDER + "/%#05d.jpg" % (3), reconstructed_image[0].numpy())
         #         save_image_to_folder(
         #             GENERATED_DATA_SET_FOLDER + '/%#05d' + '/%#05d' + GENERATED_FRAMES_FOLDER % epoch, i,
         #             reconstructed_image)
-        # source_Encoder.eval()
-        # driver_Encoder.eval()
-        # lmd.eval()
-        # discriminator.eval()
-        break
+        source_Encoder.eval()
+        driver_Encoder.eval()
+        lmd.eval()
+        discriminator.eval()
+
 
 
 if __name__ == "__main__":
