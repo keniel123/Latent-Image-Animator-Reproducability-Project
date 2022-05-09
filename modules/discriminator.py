@@ -4,10 +4,11 @@ from torch import nn
 from torch.nn import init
 from torch.nn import functional as F
 from torch.autograd import Function
+import torch.nn.functional as F
 
 from math import sqrt
 
-from modules.style_conv import EqualConv2d
+from modules.style_conv import EqualConv2d, FusedDownsample, EqualLinear
 
 
 class ConvBlock(nn.Module):
@@ -84,6 +85,13 @@ class Discriminator(nn.Module):
             nn.AvgPool2d(2),
             nn.LeakyReLU(0.2),
         )
+        self.conv1 = nn.Sequential(ConvBlock(in_channel=512,
+                                            out_channel=1,
+                                            kernel_size=4,
+                                            padding=1,
+                                            downsample=True,
+                                            fused=False
+                                            ))
 
     def forward(self, x):
         ### Initial Block
@@ -94,6 +102,9 @@ class Discriminator(nn.Module):
         out = self.downConv(out)
         out = self.downConv(out)
         out = self.fromRGB(out)
-        out = self.conv6(out)
+        out = self.conv(out)
+        out = self.conv1(out)
+        out = torch.sigmoid(out)
+        print(out)
         return out
 

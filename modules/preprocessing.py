@@ -6,7 +6,7 @@ from torchvision import transforms
 
 
 TRAINING_SET_FOLDER = "../training"
-GENERATED_DATA_SET_FOLDER = "../training/generated"
+GENERATED_DATA_SET_FOLDER = "training/generated"
 TRAINING_IMAGES_VIDEOS_SET_FOLDER = "training/training_images"
 GENERATED_FRAMES_FOLDER = "/frames"
 GENERATED_VIDEOS_FOLDER = "/video"
@@ -92,6 +92,10 @@ def generate_video_from_frames(source_path, output_path, fps):
 
 
 def save_image_to_folder(path, image):
+    try:
+        os.mkdir(path)
+    except OSError:
+        pass
     cv2.imwrite(path, image)
 
 

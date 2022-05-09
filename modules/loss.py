@@ -6,7 +6,9 @@ import torchvision
 import torch.nn.functional as F
 
 from modules.utils import ImagePyramid
+import ssl
 
+ssl._create_default_https_context = ssl._create_unverified_context
 
 class VGGPerceptualLoss(torch.nn.Module):
     def __init__(self, resize=False):
@@ -64,8 +66,12 @@ class LossFunctions:
         loss = F.softplus(-prediction).mean()
         return loss
 
-    def loss_function(self, reconstructed_image, target_image):
+    def loss_function(self, reconstructed_image, target_image, prediction):
+        print("recon   ", self.reconstruction_loss(reconstructed_image, target_image))
+        print("percept   ", self.lambda_perceptual_loss * self.perceptual_loss(reconstructed_image,target_image))
+        print("adversarial   ", self.adversarial_loss(prediction))
+
         return self.reconstruction_loss(reconstructed_image, target_image) + \
                (self.lambda_perceptual_loss * self.perceptual_loss(reconstructed_image,
                                                                    target_image)) + self.adversarial_loss(
-            reconstructed_image)
+            prediction)

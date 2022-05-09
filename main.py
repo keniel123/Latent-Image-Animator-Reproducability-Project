@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch import optim
 from torchvision import transforms
-
+from torchvision.utils import save_image
 from modules.discriminator import Discriminator
 from modules.encoder import Encoder
 from itertools import chain
@@ -32,7 +32,6 @@ def main():
     source_Encoder = Encoder(3, True)
     driver_Encoder = Encoder(3, False)
 
-    convert_tensor = transforms.ToTensor()
     discriminator = Discriminator()
     loss = LossFunctions()
     lmd = LinearMotionDecomposition()
@@ -57,25 +56,32 @@ def main():
             for driving_image in driving_frames:
                 generator_optimiser.zero_grad()
                 discriminator_optimiser.zero_grad()
-                #print(driving_image)
-                #source_features, source_latent_code = source_Encoder(source_image)
+                # print(driving_image)
+                source_features, source_latent_code = source_Encoder(source_image)
 
                 motion_magnitudes = driver_Encoder(driving_image)
-                print(motion_magnitudes)
+
+                target_latent_code = lmd.generate_target_code(source_latent_code, motion_magnitudes)
+
+                reconstructed_image = generator(source_features, target_latent_code)
+                discriminator_real = discriminator(driving_image).reshape(-1)
+                discriminator_fake = discriminator(reconstructed_image).reshape(-1)
+
+                discriminator_loss_real = criterion(discriminator_real, torch.ones_like(discriminator_real))
+                discriminator_loss_fake = criterion(discriminator_fake, torch.ones_like(discriminator_fake))
+                discriminator_loss = (discriminator_loss_real + discriminator_loss_fake / 2)
+                discriminator_loss.backward(retain_graph=True)
+                discriminator_optimiser.step()
+
+
+                test_loss = LossModel()
+                print("test losss     " ,test_loss(reconstructed_image,driving_image,discriminator_fake))
+                generator_loss = loss.loss_function(reconstructed_image, driving_image, discriminator_fake)
+                generator_loss.backward()
+                generator_optimiser.step()
+                print(generator_loss)
                 sys.exit()
                 break
-        #         target_latent_code = lmd.generate_target_code(source_latent_code, motion_magnitudes)
-        #         reconstructed_image = generator(source_features, target_latent_code)
-        #
-        #         discriminator_loss_real = criterion(driving_image, torch.ones_like(driving_image))
-        #         discriminator_loss_fake = criterion(reconstructed_image, torch.ones_like(reconstructed_image))
-        #         discriminator_loss = (discriminator_loss_real + discriminator_loss_fake / 2)
-        #         discriminator_loss.backward()
-        #         discriminator_optimiser.step()
-        #
-        #         generator_loss = loss.loss_function(reconstructed_image, driving_image)
-        #         generator_loss.backward()
-        #         generator_optimiser.step()
         #
         #         # loss_values = [val.mean() for val in losses.values()]
         #         # loss = sum(loss_values)
@@ -83,6 +89,9 @@ def main():
         #         # keep track of the loss and update the stats
         #         generator_losses.append(generator_loss.item())
         #         discriminator_losses.append(discriminator_loss.item())
+        #             print(reconstructed_image[0].shape)
+        #             save_image(reconstructed_image[0], GENERATED_DATA_SET_FOLDER + "/%#05d.jpg" % (i))
+        #             save_image_to_folder(GENERATED_DATA_SET_FOLDER + "/%#05d.jpg" % (3), reconstructed_image[0].numpy())
         #         save_image_to_folder(
         #             GENERATED_DATA_SET_FOLDER + '/%#05d' + '/%#05d' + GENERATED_FRAMES_FOLDER % epoch, i,
         #             reconstructed_image)
@@ -95,5 +104,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
