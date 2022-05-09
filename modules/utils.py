@@ -123,7 +123,7 @@ class AntiAliasInterpolation2d(nn.Module):
 
         out = F.pad(input, (self.ka, self.kb, self.ka, self.kb))
         out = F.conv2d(out, weight=self.weight, groups=self.groups)
-        out = out[:, :, ::self.int_inv_scale, ::self.int_inv_scale]
+        out = out[:,:, ::self.int_inv_scale, ::self.int_inv_scale]
 
         return out
 

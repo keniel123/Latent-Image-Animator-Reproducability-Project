@@ -6,7 +6,7 @@ from torchvision import transforms
 
 
 TRAINING_SET_FOLDER = "../training"
-GENERATED_DATA_SET_FOLDER = "../training/generated"
+GENERATED_DATA_SET_FOLDER = "training/generated"
 TRAINING_IMAGES_VIDEOS_SET_FOLDER = "training/training_images"
 GENERATED_FRAMES_FOLDER = "/frames"
 GENERATED_VIDEOS_FOLDER = "/video"
@@ -91,8 +91,13 @@ def generate_video_from_frames(source_path, output_path, fps):
     out.release()
 
 
-def save_image_to_folder(path, image):
-    cv2.imwrite(path, image)
+def save_image_to_folder(path,name,image):
+    try:
+        os.mkdir(path)
+    except OSError:
+        pass
+    print(path)
+    cv2.imwrite(path + name, image)
 
 
 def generate_frames_from_videos(folder):
@@ -105,7 +110,7 @@ def get_training_set(training_folder):
     # Define a transform to convert the image to tensor
     transform = transforms.ToTensor()
     # Convert the image to PyTorch tensor
-    print(training_folder)
+    #print(training_folder)
     training_images = []
     temp_images = []
     training_list = os.listdir(training_folder)

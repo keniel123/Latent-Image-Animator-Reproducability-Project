@@ -16,7 +16,8 @@ import numpy as np
 
 def initial_directions(components, dimensions, device):
     M = torch.randn(dimensions, components).to(device)
-    Q, R = adjust_sign(*QR_Decomposition(M))
+    #Q, R = adjust_sign(*QR_Decomposition(M))
+    Q,R = torch.linalg.qr(M)
     return Q
 
 
@@ -28,7 +29,7 @@ def QR_Decomposition(A):
     u[:, 0] = A[:, 0]
     Q[:, 0] = u[:, 0] / torch.linalg.norm(u[:, 0])
     for i in range(1, n):
-        #print(i)
+        # print(i)
         u[:, i] = A[:, i]
         for j in range(i):
             u[:, i] -= (A[:, i] @ Q[:, j]) * Q[:, j]  # get each u vector
@@ -61,18 +62,15 @@ class LinearMotionDecomposition(nn.Module):
     MOTION_DICTIONARY_SIZE = 20
     MOTION_DICTIONARY_DIMENSION = 512
 
-    #self.register_parameter(name='bias', param=torch.nn.Parameter(torch.randn(3)))
-
     def __init__(self):
         super(LinearMotionDecomposition, self).__init__()
         self.motion_dictionary = torch.nn.Parameter(
-            initial_directions(self.MOTION_DICTIONARY_DIMENSION, self.MOTION_DICTIONARY_SIZE, device='cpu'),
+            initial_directions(self.MOTION_DICTIONARY_SIZE, self.MOTION_DICTIONARY_DIMENSION, device='cpu'),
             requires_grad=True)
 
-    @staticmethod
     def generate_latent_path(self, magnitudes):
         Z = torch.empty(1, 512)
-        M = torch.transpose(self.motion_dictionary)
+        M = torch.transpose(self.motion_dictionary.data, 0, 1)
         for i in range(magnitudes.shape[0]):
             for j in range(M.shape[1]):
                 total = 0
@@ -82,7 +80,7 @@ class LinearMotionDecomposition(nn.Module):
         return Z
 
     def generate_target_code(self, source_latent_code, magnitudes):
-        return source_latent_code + self.generate_latent_path(magnitudes)
+        return source_latent_code + self.generate_latent_path(magnitudes=magnitudes)
 
     def forward(self, x, magnitudes):
         self.motion_dictionary = adjust_sign(*QR_Decomposition(self.motion_dictionary))

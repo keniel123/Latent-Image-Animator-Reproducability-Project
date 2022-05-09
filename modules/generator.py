@@ -79,6 +79,7 @@ class Generator(nn.Module):
     def forward(self, appearance_features, latent_code):
         ### Initial Block
 
+
         out = self.style_conv((appearance_features[0], latent_code))
         rgb = self.toRGB(out)
         upConv = self.upConv(rgb)
@@ -86,7 +87,7 @@ class Generator(nn.Module):
         ### First
         out = self.style_conv1((out, latent_code))
         warpout = self.warpconv1(out)
-        warpout = flow_warp(appearance_features[1], warpout)
+        warpout = flow_warp(appearance_features[0], warpout)
         rgb1 = self.toRGB1(warpout)
         sum1 = rgb1 + upConv
         upConv1 = self.upConv(sum1)
@@ -94,7 +95,7 @@ class Generator(nn.Module):
         # ###### Second Block
         out = self.style_conv2((out, latent_code))
         warpout = self.warpconv2(out)
-        warpout = flow_warp(appearance_features[2], warpout)
+        warpout = flow_warp(appearance_features[1], warpout)
         rgb2 = self.toRGB2(warpout)
         sum2 = rgb2 + upConv1
         upConv2 = self.upConv(sum2)
@@ -102,7 +103,7 @@ class Generator(nn.Module):
         # ##### Third Block
         out = self.style_conv3((out, latent_code))
         warpout = self.warpconv3(out)
-        warpout = flow_warp(appearance_features[3], warpout)
+        warpout = flow_warp(appearance_features[2], warpout)
         rgb3 = self.toRGB3(warpout)
         sum3 = rgb3 + upConv2
         upConv3 = self.upConv(sum3)
@@ -110,7 +111,7 @@ class Generator(nn.Module):
         ##### Fourth Block
         out = self.style_conv4((out, latent_code))
         warpout = self.warpconv4(out)
-        warpout = flow_warp(appearance_features[4], warpout)
+        warpout = flow_warp(appearance_features[3], warpout)
         rgb4 = self.toRGB4(warpout)
         sum4 = rgb4 + upConv3
         upConv4 = self.upConv(sum4)
@@ -118,7 +119,7 @@ class Generator(nn.Module):
         # ##### Fifth Block
         out = self.style_conv5((out, latent_code))
         warpout = self.warpconv5(out)
-        warpout = flow_warp(appearance_features[5], warpout)
+        warpout = flow_warp(appearance_features[4], warpout)
         rgb5 = self.toRGB5(warpout)
         sum5 = rgb5 + upConv4
         upConv5 = self.upConv(sum5)
@@ -126,7 +127,9 @@ class Generator(nn.Module):
         # ##### Sixth Block
         out = self.style_conv6((out, latent_code))
         warpout = self.warpconv6(out)
-        warpout = flow_warp(appearance_features[6], warpout)
+        #print("i print flow 6")
+        #print(len(appearance_features))
+        warpout = flow_warp(appearance_features[5], warpout)
         rgb6 = self.toRGB6(warpout)
         sum6 = rgb6 + upConv5
 

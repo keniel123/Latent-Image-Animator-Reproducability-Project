@@ -39,6 +39,33 @@ def equal_lr(module, name='weight'):
 
     return module
 
+class FusedDownsample(nn.Module):
+    def __init__(self, in_channel, out_channel, kernel_size, padding=0):
+        super().__init__()
+
+        weight = torch.randn(out_channel, in_channel, kernel_size, kernel_size)
+        bias = torch.zeros(out_channel)
+
+        fan_in = in_channel * kernel_size * kernel_size
+        self.multiplier = sqrt(2 / fan_in)
+
+        self.weight = nn.Parameter(weight)
+        self.bias = nn.Parameter(bias)
+
+        self.pad = padding
+
+    def forward(self, input):
+        weight = F.pad(self.weight * self.multiplier, [1, 1, 1, 1])
+        weight = (
+            weight[:, :, 1:, 1:]
+            + weight[:, :, :-1, 1:]
+            + weight[:, :, 1:, :-1]
+            + weight[:, :, :-1, :-1]
+        ) / 4
+
+        out = F.conv2d(input, weight, self.bias, stride=2, padding=self.pad)
+
+        return out
 
 class FusedUpsample(nn.Module):
     def __init__(self, in_channel, out_channel, kernel_size, padding=0):
@@ -145,7 +172,6 @@ class StyledConvBlock(nn.Module):
         out = self.conv1(input[0])
         out = self.bn1(out)
         # print(out.shape)
-
         out = self.apply_style(out, input[1])
         out = F.relu(out)
         # print(out)
@@ -220,8 +246,8 @@ def flow_warp(x, warped_conv, padding_mode='zeros'):
         Tensor: warped image or feature map
     """
     phi = torch.tanh(torch.tensor(warped_conv[0][0:1]))
-
     m = torch.sigmoid(torch.tensor(warped_conv[0][2]))
+
     # print(phi.shape, m.shape, x.shape)
     # print(x.size()[-2:], flow.size()[-2:])
     # assert x.size()[-2:] == phi.size()[-2:]
@@ -240,3 +266,15 @@ def flow_warp(x, warped_conv, padding_mode='zeros'):
     return raw_masked_image
 
 
+class EqualLinear(nn.Module):
+    def __init__(self, in_dim, out_dim):
+        super().__init__()
+
+        linear = nn.Linear(in_dim, out_dim)
+        linear.weight.data.normal_()
+        linear.bias.data.zero_()
+
+        self.linear = equal_lr(linear)
+
+    def forward(self, input):
+        return self.linear(input)
