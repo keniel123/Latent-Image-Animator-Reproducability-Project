@@ -7,6 +7,7 @@ from modules.discriminator import Discriminator
 from modules.encoder import Encoder
 from itertools import chain
 import torch.nn.functional as F
+from torch.utils.tensorboard import SummaryWriter
 
 from modules.generator import Generator
 from modules.lmd import LinearMotionDecomposition
@@ -39,6 +40,10 @@ def main():
     for section in cfg:
         testing_phase = bool(cfg["testing_phase"])
 
+    # Create a SummaryWriter instance
+    # SummaryWriter writes event files to log_dir
+    log_dir = "logs"
+    writer = SummaryWriter(log_dir)
     # build the model
     source_Encoder = Encoder(3, True)
     driver_Encoder = Encoder(3, False)
@@ -94,6 +99,10 @@ def main():
                     # keep track of the loss and update the stats
                     generator_losses.append(generator_loss.item())
                     discriminator_losses.append(discriminator_loss.item())
+                    
+                    # Tensorboard
+                    writer.add_scalar('Generator Loss', generator_losses, epoch)
+                    writer.add_scalar('Discriminator Loss', discriminator_losses, epoch)
 
                     # save_image_to_folder(
                     #     GENERATED_DATA_SET_FOLDER + "/{}/{}".format(epoch, i) + GENERATED_FRAMES_FOLDER
@@ -121,6 +130,10 @@ def main():
         driver_Encoder.eval()
         lmd.eval()
         discriminator.eval()
+        
+    # closing the writer for torchvision
+    writer.flush()
+    writer.close()
 
 
 
