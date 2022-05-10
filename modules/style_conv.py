@@ -245,9 +245,8 @@ def flow_warp(x, warped_conv, padding_mode='zeros'):
     Returns:
         Tensor: warped image or feature map
     """
-    phi = torch.tanh(torch.tensor(warped_conv[0][0:1]))
+    phi = torch.tanh(torch.tensor(warped_conv[0][0:2]))
     m = torch.sigmoid(torch.tensor(warped_conv[0][2]))
-
     # print(phi.shape, m.shape, x.shape)
     # print(x.size()[-2:], flow.size()[-2:])
     # assert x.size()[-2:] == phi.size()[-2:]

@@ -2,12 +2,17 @@ from os.path import isfile, join
 import cv2
 import time
 import os
+
+from torch.utils.data import DataLoader
 from torchvision import transforms
 
 
 TRAINING_SET_FOLDER = "../training"
 GENERATED_DATA_SET_FOLDER = "training/generated"
-TRAINING_IMAGES_VIDEOS_SET_FOLDER = "training/training_images"
+TAICHI_TRAINING_IMAGES_VIDEOS_SET_FOLDER = "training/training_images/taichi"
+VOXCELEB_TRAINING_IMAGES_VIDEOS_SET_FOLDER = "training/training_images/voxceleb"
+TAICHI_TESTING_IMAGES_VIDEOS_SET_FOLDER = "testing/testing_images/taichi"
+VOXCELEB_TESTING_IMAGES_VIDEOS_SET_FOLDER = "testing/testing_images/voxceleb"
 GENERATED_FRAMES_FOLDER = "/frames"
 GENERATED_VIDEOS_FOLDER = "/video"
 VIDEO_DATASET_FOLDER = "../dataset/videos"
@@ -106,26 +111,28 @@ def generate_frames_from_videos(folder):
         generate_frames_from_video(folder + "/" + files[vid_inx], "../training" + "/" + files[vid_inx])
 
 
-def get_training_set(training_folder):
+def get_dataset(data_folder):
     # Define a transform to convert the image to tensor
     transform = transforms.ToTensor()
     # Convert the image to PyTorch tensor
     #print(training_folder)
-    training_images = []
+    images = []
     temp_images = []
-    training_list = os.listdir(training_folder)
+    training_list = os.listdir(data_folder)
     for folder in training_list:
         if not folder.startswith("."):
-            files = os.listdir(training_folder + "/" + folder)
+            files = os.listdir(data_folder + "/" + folder)
             files.sort(key=lambda x: int(float(x.split('.')[0])))
             for file in files:
                 if not file.startswith("."):
-                    img = transform(cv2.imread(training_folder + "/" + folder + "/" + file))
+                    img = transform(cv2.imread(data_folder + "/" + folder + "/" + file))
                     temp_images.append(img)
-            training_images.append(temp_images)
-    return training_images
+            images.append(temp_images)
+    return images
 
-
+def get_dataloader(frames, batch_no):
+  data_loader = DataLoader(frames, batch_size=batch_no)
+  return data_loader
 
 
 

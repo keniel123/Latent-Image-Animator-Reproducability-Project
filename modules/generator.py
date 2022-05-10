@@ -68,13 +68,13 @@ class Generator(nn.Module):
         self.toRGB7 = nn.Sequential(EqualConv2d(64, 3, 1))
 
         self.upConv = nn.Upsample(scale_factor=2, mode='nearest')
-        self.warpconv1 = nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1)
-        self.warpconv2 = nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1)
-        self.warpconv3 = nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1)
-        self.warpconv4 = nn.Conv2d(in_channels=256, out_channels=3, kernel_size=3, stride=1, padding=1)
-        self.warpconv5 = nn.Conv2d(in_channels=128, out_channels=3, kernel_size=3, stride=1, padding=1)
-        self.warpconv6 = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1)
-        self.warpconv7 = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1)
+        self.warpconv1 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
+        self.warpconv2 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
+        self.warpconv3 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
+        self.warpconv4 = nn.Sequential(nn.Conv2d(in_channels=256, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
+        self.warpconv5 = nn.Sequential(nn.Conv2d(in_channels=128, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
+        self.warpconv6 = nn.Sequential(nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
+        self.warpconv7 = nn.Sequential(nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
 
     def forward(self, appearance_features, latent_code):
         ### Initial Block

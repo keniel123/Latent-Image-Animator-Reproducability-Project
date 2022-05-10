@@ -69,8 +69,10 @@ class LinearMotionDecomposition(nn.Module):
             requires_grad=True)
 
     def generate_latent_path(self, magnitudes):
+        magnitudes = magnitudes.unsqueeze(0)
         Z = torch.empty(1, 512)
         M = torch.transpose(self.motion_dictionary.data, 0, 1)
+        #print(magnitudes.shape)
         for i in range(magnitudes.shape[0]):
             for j in range(M.shape[1]):
                 total = 0

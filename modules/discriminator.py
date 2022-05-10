@@ -76,7 +76,7 @@ class Discriminator(nn.Module):
                                             padding=1,
                                             downsample=False,
                                             fused=False
-                                            ))
+                                            ), nn.BatchNorm2d(512))
 
         self.fromRGB = nn.Sequential(EqualConv2d(3, 512, 1))
 
@@ -84,14 +84,14 @@ class Discriminator(nn.Module):
             EqualConv2d(3, 3, 1),
             nn.AvgPool2d(2),
             nn.LeakyReLU(0.2),
-        )
+            nn.BatchNorm2d(3))
         self.conv1 = nn.Sequential(ConvBlock(in_channel=512,
-                                            out_channel=1,
-                                            kernel_size=4,
-                                            padding=1,
-                                            downsample=True,
-                                            fused=False
-                                            ))
+                                             out_channel=1,
+                                             kernel_size=4,
+                                             padding=1,
+                                             downsample=True,
+                                             fused=False
+                                             ))
 
     def forward(self, x):
         ### Initial Block
@@ -105,6 +105,5 @@ class Discriminator(nn.Module):
         out = self.conv(out)
         out = self.conv1(out)
         out = torch.sigmoid(out)
-        #print(out)
+        # print(out)
         return out
-

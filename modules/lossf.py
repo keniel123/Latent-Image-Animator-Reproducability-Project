@@ -112,6 +112,6 @@ class LossModel(torch.nn.Module):
             loss_values['reconstruction'] = self.recon_loss(reconstructed_image,target_image)
 
         if self.loss_weights['adversarial_loss'] != 0:
-            loss_values['adversarial_loss'] = F.softplus(-disc_prediction).mean()
+            loss_values['adversarial_loss'] = -np.log(disc_prediction.detach().numpy())
 
         return loss_values
