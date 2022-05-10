@@ -113,8 +113,8 @@ def main():
                     'driver_encoder': driver_Encoder,
                     'discriminator': discriminator,
                     'generator': generator,
-                    'generator_optimizer_state_dict': generator_optimiser.load_state_dict(),
-                    'discriminator_optimizer_state_dict': discriminator_optimiser.load_state_dict(),
+                    'generator_optimizer_state_dict': generator_optimiser.state_dict(),
+                    'discriminator_optimizer_state_dict': discriminator_optimiser.state_dict(),
                     'generator_loss': generator_losses,
                     'discriminator_loss': discriminator_losses,
                 }, PATH)
