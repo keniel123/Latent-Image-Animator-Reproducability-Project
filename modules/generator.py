@@ -3,6 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from modules.style_conv import flow_warp, EqualConv2d, StyledConvBlock
+from modules.utils import get_device
 
 
 class Generator(nn.Module):
@@ -68,13 +69,13 @@ class Generator(nn.Module):
         self.toRGB7 = nn.Sequential(EqualConv2d(64, 3, 1))
 
         self.upConv = nn.Upsample(scale_factor=2, mode='nearest')
-        self.warpconv1 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
-        self.warpconv2 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
-        self.warpconv3 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
-        self.warpconv4 = nn.Sequential(nn.Conv2d(in_channels=256, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
-        self.warpconv5 = nn.Sequential(nn.Conv2d(in_channels=128, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
-        self.warpconv6 = nn.Sequential(nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
-        self.warpconv7 = nn.Sequential(nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU())
+        self.warpconv1 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU()).to(get_device())
+        self.warpconv2 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU()).to(get_device())
+        self.warpconv3 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU()).to(get_device())
+        self.warpconv4 = nn.Sequential(nn.Conv2d(in_channels=256, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU()).to(get_device())
+        self.warpconv5 = nn.Sequential(nn.Conv2d(in_channels=128, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU()).to(get_device())
+        self.warpconv6 = nn.Sequential(nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU()).to(get_device())
+        self.warpconv7 = nn.Sequential(nn.Conv2d(in_channels=64, out_channels=3, kernel_size=3, stride=1, padding=1), nn.BatchNorm2d(3), nn.ReLU()).to(get_device())
 
     def forward(self, appearance_features, latent_code):
         ### Initial Block

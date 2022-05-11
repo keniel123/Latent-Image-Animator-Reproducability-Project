@@ -79,7 +79,7 @@ class LossModel(torch.nn.Module):
 
     def __init__(self):
         super(LossModel, self).__init__()
-        train_params = { "scales": [1, 0.5, 0.25, 0.125], "loss_weights": {"perceptual": [10, 10, 10, 10, 10], "reconstruction": 10,"adversarial_loss": 10}}
+        train_params = { "scales": [1, 0.5, 0.25, 0.125], "loss_weights": {"perceptual": [10, 10, 10, 10], "reconstruction": 10,"adversarial_loss": 10}}
         self.scales = train_params['scales']
         self.recon_loss = nn.L1Loss(reduction='mean')
         self.pyramid = ImagePyramid(self.scales, 3)

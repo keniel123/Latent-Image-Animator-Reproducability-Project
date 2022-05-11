@@ -8,7 +8,8 @@ from torchvision import transforms
 
 
 TRAINING_SET_FOLDER = "../training"
-GENERATED_DATA_SET_FOLDER = "training/generated"
+GENERATED_TRAINING_DATA_SET_FOLDER = "training/generated"
+GENERATED_TESTING_DATA_SET_FOLDER = "testing/generated"
 TAICHI_TRAINING_IMAGES_VIDEOS_SET_FOLDER = "training/training_images/taichi"
 VOXCELEB_TRAINING_IMAGES_VIDEOS_SET_FOLDER = "training/training_images/voxceleb"
 TAICHI_TESTING_IMAGES_VIDEOS_SET_FOLDER = "testing/testing_images/taichi"
@@ -108,7 +109,7 @@ def save_image_to_folder(path,name,image):
 def generate_frames_from_videos(folder):
     files = os.listdir(folder)
     for vid_inx in range(len(files)):
-        generate_frames_from_video(folder + "/" + files[vid_inx], "../training" + "/" + files[vid_inx])
+        generate_frames_from_video(folder + "/" + files[vid_inx], "../test_vox" + "/" + files[vid_inx])
 
 
 def get_dataset(data_folder):
@@ -135,4 +136,19 @@ def get_dataloader(frames, batch_no):
   return data_loader
 
 
+def save_images_to_folder(frame, dataset, foldername, filename):
+    frame = frame.detach.numpy()
+    existing_path = GENERATED_TESTING_DATA_SET_FOLDER
+    if os.path.exists(existing_path + dataset):
+        if os.path.exists(existing_path + dataset + '/' + foldername):
+            cv2.imwrite(existing_path + dataset + '/' + foldername + '/' + filename + '.jpg', frame)
+        else:
+            os.makedirs(existing_path + dataset + '/' + foldername)
+            cv2.imwrite(existing_path + dataset + '/' + foldername + '/' + filename + '.jpg', frame)
+    else:
+        os.makedirs(existing_path + dataset + '/' + foldername)
+        cv2.imwrite(existing_path + dataset + '/' + foldername + '/' + filename + '.jpg', frame)
 
+
+if __name__ == "__main__":
+    generate_frames_from_videos("../Test")

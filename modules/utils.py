@@ -3,6 +3,9 @@ import torch.nn.functional as F
 from torch.nn import BatchNorm2d
 import torch
 import math
+import os
+
+
 
 
 class ResBlock(nn.Module):
@@ -123,7 +126,7 @@ class AntiAliasInterpolation2d(nn.Module):
 
         out = F.pad(input, (self.ka, self.kb, self.ka, self.kb))
         out = F.conv2d(out, weight=self.weight, groups=self.groups)
-        out = out[:,:, ::self.int_inv_scale, ::self.int_inv_scale]
+        out = out[:, :, ::self.int_inv_scale, ::self.int_inv_scale]
 
         return out
 
@@ -156,3 +159,43 @@ def flow_warp(x, warped_conv, padding_mode='zeros'):
     warped_image = F.grid_sample(x, grid)
     raw_masked_image = warped_image * m
     return raw_masked_image
+
+
+def get_device():
+    device = "cpu"
+    # for working in GPU
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        deviceid = 1
+        os.environ['CUDA_VISIBLE_DEVICES'] = "%d" % deviceid
+        total, used = os.popen(
+            '"nvidia-smi" --query-gpu=memory.total,memory.used --format=csv,nounits,noheader'
+        ).read().split('\n')[deviceid].split(',')
+        total = int(total)
+        used = int(used)
+
+    return device
+
+
+def load_model(source_Encoder, driver_Encoder, discriminator, generator, generator_optimiser, discriminator_optimiser, PATH):
+    # Load the existing model
+    if os.path.exists(PATH) and os.path.getsize(PATH) != 0:
+        checkpoint = torch.load(PATH)
+        source_Encoder = checkpoint['sourceencoder']
+        driver_Encoder = checkpoint['driver_encoder']
+        discriminator = checkpoint['discriminator']
+        generator = checkpoint['generator']
+        generator_optimiser.load_state_dict(checkpoint['generator_optimizer_state_dict'])
+        discriminator_optimiser.load_state_dict(checkpoint['discriminator_optimizer_state_dict'])
+    return source_Encoder, driver_Encoder, discriminator, generator, generator_optimiser, discriminator_optimiser
+
+
+def save_model(source_Encoder, driver_Encoder, discriminator, generator, generator_optimiser, discriminator_optimiser, PATH):
+    torch.save({
+        'sourceencoder': source_Encoder,
+        'driver_encoder': driver_Encoder,
+        'discriminator': discriminator,
+        'generator': generator,
+        'generator_optimizer_state_dict': generator_optimiser.state_dict(),
+        'discriminator_optimizer_state_dict': discriminator_optimiser.state_dict()
+    }, PATH)

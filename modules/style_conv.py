@@ -7,6 +7,8 @@ from torch.autograd import Function
 
 from math import sqrt
 
+from modules.utils import get_device
+
 
 class EqualLR:
     def __init__(self, name):
@@ -163,7 +165,7 @@ class StyledConvBlock(nn.Module):
                     in_channel, out_channel, kernel_size, padding=padding
                 )
 
-        self.apply_style = ApplyStyle(style_dim, out_channel, False)
+        self.apply_style = ApplyStyle(style_dim, out_channel, False).to(get_device())
         self.bn1 = nn.BatchNorm2d(out_channel)
 
     def forward(self, input):
