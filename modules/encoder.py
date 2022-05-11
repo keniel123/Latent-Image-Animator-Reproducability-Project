@@ -12,12 +12,12 @@ class Encoder(nn.Module):
     def __init__(self, in_channels, isSource):
         super(Encoder, self).__init__()
         self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
-        self.layer1 = nn.Sequential(ResBlock(64, 128), nn.BatchNorm2d(128))
-        self.layer2 = nn.Sequential(ResBlock(128, 256), nn.BatchNorm2d(256))
-        self.layer3 = nn.Sequential(ResBlock(256, 512), nn.BatchNorm2d(512))
-        self.layer4 = nn.Sequential(ResBlock(512, 512), nn.BatchNorm2d(512))
-        self.layer5 = nn.Sequential(ResBlock(512, 512), nn.BatchNorm2d(512))
-        self.layer6 = nn.Sequential(ResBlock(512, 512), nn.BatchNorm2d(512))
+        self.layer1 = nn.Sequential(ResBlock(64, 128))
+        self.layer2 = nn.Sequential(ResBlock(128, 256))
+        self.layer3 = nn.Sequential(ResBlock(256, 512))
+        self.layer4 = nn.Sequential(ResBlock(512, 512))
+        self.layer5 = nn.Sequential(ResBlock(512, 512))
+        self.layer6 = nn.Sequential(ResBlock(512, 512))
         self.layer7 = nn.Sequential(ResBlock(512, 512, pool_stride=4))
         self.conv2 = nn.Conv2d(512, 512, kernel_size=4, padding=2, stride=2)
         self.bn1 = nn.BatchNorm2d(64)
@@ -48,5 +48,7 @@ class Encoder(nn.Module):
         if self.isSource:
             return [x_enc1, x_enc2, x_enc3, x_enc4, x_enc5, x_enc6], x
         else:
+            print("shape  ", x.shape)
             magnitudes = self.magnitude_mlp(x)
-            return magnitudes[1]
+            print("magnitudes  ", magnitudes.shape)
+            return magnitudes[0]

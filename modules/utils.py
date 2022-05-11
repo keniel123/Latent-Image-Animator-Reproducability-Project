@@ -177,7 +177,7 @@ def get_device():
     return device
 
 
-def load_model(source_Encoder, driver_Encoder, discriminator, generator, generator_optimiser, discriminator_optimiser, PATH):
+def load_model(source_Encoder, driver_Encoder, discriminator, generator, PATH):
     # Load the existing model
     if os.path.exists(PATH) and os.path.getsize(PATH) != 0:
         checkpoint = torch.load(PATH)
@@ -185,17 +185,13 @@ def load_model(source_Encoder, driver_Encoder, discriminator, generator, generat
         driver_Encoder = checkpoint['driver_encoder']
         discriminator = checkpoint['discriminator']
         generator = checkpoint['generator']
-        generator_optimiser.load_state_dict(checkpoint['generator_optimizer_state_dict'])
-        discriminator_optimiser.load_state_dict(checkpoint['discriminator_optimizer_state_dict'])
-    return source_Encoder, driver_Encoder, discriminator, generator, generator_optimiser, discriminator_optimiser
+    return source_Encoder, driver_Encoder, discriminator, generator
 
 
-def save_model(source_Encoder, driver_Encoder, discriminator, generator, generator_optimiser, discriminator_optimiser, PATH):
+def save_model(source_Encoder, driver_Encoder, discriminator, generator, PATH):
     torch.save({
         'sourceencoder': source_Encoder,
         'driver_encoder': driver_Encoder,
         'discriminator': discriminator,
-        'generator': generator,
-        'generator_optimizer_state_dict': generator_optimiser.state_dict(),
-        'discriminator_optimizer_state_dict': discriminator_optimiser.state_dict()
+        'generator': generator
     }, PATH)

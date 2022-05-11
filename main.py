@@ -55,19 +55,18 @@ def train(dataset_name, device):
     # get training set
     training_set = get_dataset(
         TAICHI_TRAINING_IMAGES_VIDEOS_SET_FOLDER if dataset_name == "taichi" else VOXCELEB_TRAINING_IMAGES_VIDEOS_SET_FOLDER)
-    writer = SummaryWriter(f'runs/LIA/training/tensorboard')
+    writer1 = SummaryWriter(f'runs/LIA/training/tensorboard')
     step = 0
     # training loop
     if os.path.exists(PATH) and os.path.getsize(PATH) != 0:
-        load_model(source_Encoder, driver_Encoder, discriminator, generator, generator_optimiser,
-                   discriminator_optimiser, PATH)
+        load_model(source_Encoder, driver_Encoder, discriminator, generator, PATH)
 
-    for epoch in range(1):
+    for epoch in range(25):
         generator_losses = []
         discriminator_losses = []
         for i in range(len(training_set)):
             source_image, driving_frames = training_set[i][0], training_set[i][1:]
-            dataloader = get_dataloader(driving_frames, 4)
+            dataloader = get_dataloader(training_set[i], 32)
             count = 0
             for data in dataloader:
                 count += 1
@@ -105,31 +104,21 @@ def train(dataset_name, device):
                 #     GENERATED_DATA_SET_FOLDER + "/{}/{}".format(epoch, i) + GENERATED_FRAMES_FOLDER
                 #     , epoch, i,
                 #     reconstructed_image.detach().numpy())
-                writer.add_scalar('Generator loss', generator_loss, global_step=step)
-                writer.add_scalar('Discriminator loss', discriminator_loss.item(), global_step=step)
+                writer1.add_scalar('Generator loss', generator_loss, global_step=step)
+                writer1.add_scalar('Discriminator loss', discriminator_loss.item(), global_step=step)
 
-                writer.add_graph(source_Encoder, data)
-
-                # writer.add_embedding(target_latent_code)
-
-                step += 1
-                save_image(reconstructed_image[0],
-                           GENERATED_TRAINING_DATA_SET_FOLDER + "/{}.jpg".format(count))
-                print("save image " + str(count))
                 print(generator_losses)
                 print(discriminator_losses)
 
-        #             save_image_to_folder(GENERATED_DATA_SET_FOLDER + "/%#05d.jpg" % (3), reconstructed_image[0].numpy())
-        #         save_image_to_folder(
-        #             GENERATED_DATA_SET_FOLDER + '/%#05d' + '/%#05d' + GENERATED_FRAMES_FOLDER % epoch, i,
-        #             reconstructed_image)
+                step += 1
+
         if epoch % 5 == 0:
-            save_model(source_Encoder, driver_Encoder, discriminator, generator, generator_optimiser,
-                       discriminator_optimiser, PATH)
+            save_model(source_Encoder, driver_Encoder, discriminator, generator, PATH)
         return source_Encoder, driver_Encoder, generator, lmd, discriminator
 
 
 def test(src_encoder, targ_encoder, generator, lmd, discriminator, dataset_name):
+
     with torch.no_grad():
 
         src_encoder.eval()
@@ -147,7 +136,7 @@ def test(src_encoder, targ_encoder, generator, lmd, discriminator, dataset_name)
         discriminator_losses = []
         lpips_losses = []
         aed_losses = []
-        writer = SummaryWriter(f'runs/LIA/test/tensorboard')
+        writer2 = SummaryWriter(f'runs/LIA/test/tensorboard')
         step = 0
         for i in range(len(test_set)):
             source_image, driving_frames = test_set[i][0], test_set[i][1:]
@@ -160,9 +149,10 @@ def test(src_encoder, targ_encoder, generator, lmd, discriminator, dataset_name)
             temp_perceptual_losses = []
             count = 0
             for driving_image in driving_frames:
-                source_features, source_latent_code = src_encoder(source_image)
-
-                motion_magnitudes = targ_encoder(driving_image)
+                source_features, source_latent_code = src_encoder(source_image.unsqueeze(0))
+                # print(driving_image.shape)
+                # print(driving_image.unsqueeze(0).shape)
+                motion_magnitudes = targ_encoder(driving_image.unsqueeze(0))
 
                 target_latent_code = lmd.generate_target_code(source_latent_code, motion_magnitudes)
 
@@ -183,47 +173,52 @@ def test(src_encoder, targ_encoder, generator, lmd, discriminator, dataset_name)
                 temp_disc_losses.append(discriminator_loss.item())
                 temp_l1_losses.append(gen_losses['reconstruction'])
                 temp_adv_losses.append(gen_losses['adversarial_loss'])
-                temp_perceptual_losses.append(np.sum(gen_losses['perceptual']))
+                # print(gen_losses['perceptual'])
+                temp_perceptual_losses.append(gen_losses['perceptual'])
                 ##evaluation metrics
 
                 lpips_Score = calculate_lpips_score(source_image, driving_image)
+                # print("source", source_image.shape)
+                # print("driving" , driving_image.shape)
+
                 aed_Score = calculate_aed_score(source_image, driving_image)
                 temp_lpips_losses.append(lpips_Score)
                 temp_aed_losses.append(aed_Score)
 
+                print(reconstructed_image.shape)
                 #### save test image
-                save_images_to_folder(reconstructed_image, dataset_name, "video " + str(i), count)
+                save_images_to_folder(reconstructed_image[0], dataset_name, "video " + str(i), str(count))
                 count += 1
 
-            writer.add_scalar(dataset_name + '  Generator loss ', np.mean(temp_gen_losses), global_step=step)
-            writer.add_scalar(dataset_name + ' Discriminator loss', np.mean(temp_disc_losses), global_step=step)
-            writer.add_scalar(dataset_name + ' AED Loss', np.mean(temp_aed_losses), global_step=step)
-            writer.add_scalar(dataset_name + ' Lpips Loss', np.mean(temp_lpips_losses), global_step=step)
-            writer.add_scalar(dataset_name + ' L1 Loss', np.mean(temp_l1_losses), global_step=step)
-            writer.add_scalar(dataset_name + ' Adversarial Loss', np.mean(temp_adv_losses), global_step=step)
-            writer.add_scalar(dataset_name + ' Perceptual Loss', np.mean(temp_perceptual_losses), global_step=step)
+            writer2.add_scalar(dataset_name + '  Generator loss ', np.mean(temp_gen_losses), global_step=step)
+            writer2.add_scalar(dataset_name + ' Discriminator loss', np.mean(temp_disc_losses), global_step=step)
+            writer2.add_scalar(dataset_name + ' AED Loss', np.mean(temp_aed_losses), global_step=step)
+            writer2.add_scalar(dataset_name + ' Lpips Loss', np.mean(temp_lpips_losses), global_step=step)
+            writer2.add_scalar(dataset_name + ' L1 Loss', np.mean(temp_l1_losses), global_step=step)
+            writer2.add_scalar(dataset_name + ' Adversarial Loss', np.mean(temp_adv_losses), global_step=step)
+            writer2.add_scalar(dataset_name + ' Perceptual Loss', np.mean(temp_perceptual_losses), global_step=step)
             step += 1
             generator_losses.append(temp_gen_losses)
             discriminator_losses.append(temp_disc_losses)
             aed_losses.append(temp_aed_losses)
             lpips_losses.append(temp_lpips_losses)
 
-            generate_reference_image(src_encoder, generator, source_image, driving_frames[len(driving_frames) // 2],
+            generate_reference_image(src_encoder, generator, source_image, dataset_name,
                                      count)
 
-        writer.add_scalar(dataset_name + ' Total Mean Generator loss ', np.mean(np.hstack(temp_gen_losses)))
-        writer.add_scalar(dataset_name + ' Total Mean Discriminator loss', np.mean(np.hstack(temp_disc_losses)))
-        writer.add_scalar(dataset_name + ' Total Mean AED Loss', np.mean(np.hstack(temp_aed_losses)))
-        writer.add_scalar(dataset_name + ' Total Mean Lpips Loss', np.mean(np.hstack(temp_lpips_losses)))
-        writer.add_scalar(dataset_name + ' Total Mean L1 Loss', np.mean(np.hstack(temp_l1_losses)))
-        writer.add_scalar(dataset_name + ' Total Mean Adversarial Loss', np.mean(np.hstack(temp_adv_losses)))
-        writer.add_scalar(dataset_name + ' Total Mean Perceptual Loss', np.mean(np.hstack(temp_perceptual_losses)))
+        writer2.add_scalar(dataset_name + ' Total Mean Generator loss ', np.mean(np.hstack(temp_gen_losses)))
+        writer2.add_scalar(dataset_name + ' Total Mean Discriminator loss', np.mean(np.hstack(temp_disc_losses)))
+        writer2.add_scalar(dataset_name + ' Total Mean AED Loss', np.mean(np.hstack(temp_aed_losses)))
+        writer2.add_scalar(dataset_name + ' Total Mean Lpips Loss', np.mean(np.hstack(temp_lpips_losses)))
+        writer2.add_scalar(dataset_name + ' Total Mean L1 Loss', np.mean(np.hstack(temp_l1_losses)))
+        writer2.add_scalar(dataset_name + ' Total Mean Adversarial Loss', np.mean(np.hstack(temp_adv_losses)))
+        writer2.add_scalar(dataset_name + ' Total Mean Perceptual Loss', np.mean(np.hstack(temp_perceptual_losses)))
 
 
 def generate_reference_image(encoder, generator, source_image, dataset_name, count):
-    source_features, source_latent_code = encoder(source_image)
+    source_features, source_latent_code = encoder(source_image.unsqueeze(0))
     reference_image = generator(source_features, source_latent_code)
-    save_images_to_folder(reference_image, dataset_name, "references", count)
+    save_images_to_folder(reference_image[0], dataset_name, "references", str(count))
 
 
 def main():

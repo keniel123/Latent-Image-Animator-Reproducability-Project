@@ -5,7 +5,8 @@ import os
 
 from torch.utils.data import DataLoader
 from torchvision import transforms
-
+from torchvision.utils import save_image
+import random
 
 TRAINING_SET_FOLDER = "../training"
 GENERATED_TRAINING_DATA_SET_FOLDER = "training/generated"
@@ -136,18 +137,23 @@ def get_dataloader(frames, batch_no):
   return data_loader
 
 
+
+
 def save_images_to_folder(frame, dataset, foldername, filename):
-    frame = frame.detach.numpy()
+    #print(frame)
     existing_path = GENERATED_TESTING_DATA_SET_FOLDER
-    if os.path.exists(existing_path + dataset):
-        if os.path.exists(existing_path + dataset + '/' + foldername):
-            cv2.imwrite(existing_path + dataset + '/' + foldername + '/' + filename + '.jpg', frame)
+    if os.path.exists(existing_path + '/' + dataset):
+        if os.path.exists(existing_path + '/' + dataset + '/' + foldername):
+            save_image(frame,
+                       existing_path + '/' + dataset + '/' + foldername + '/' + '{}.jpg'.format(filename))
         else:
-            os.makedirs(existing_path + dataset + '/' + foldername)
-            cv2.imwrite(existing_path + dataset + '/' + foldername + '/' + filename + '.jpg', frame)
+            os.makedirs(existing_path + '/' + dataset + '/' + foldername)
+            save_image(frame,
+                       existing_path + '/' + dataset + '/' + foldername + '/' + '{}.jpg'.format(filename))
     else:
-        os.makedirs(existing_path + dataset + '/' + foldername)
-        cv2.imwrite(existing_path + dataset + '/' + foldername + '/' + filename + '.jpg', frame)
+        os.makedirs(existing_path + '/' + dataset + '/' + foldername)
+        save_image(frame,
+                   existing_path + '/' + dataset + '/' + foldername + '/' + '{}.jpg'.format(filename))
 
 
 if __name__ == "__main__":
