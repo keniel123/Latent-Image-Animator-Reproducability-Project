@@ -7,6 +7,7 @@ from modules.discriminator import Discriminator
 from modules.encoder import Encoder
 from itertools import chain
 import torch.nn.functional as F
+from torch.utils.tensorboard import SummaryWriter
 
 from modules.generator import Generator
 from modules.lmd import LinearMotionDecomposition
@@ -15,6 +16,8 @@ from modules.lossf import LossModel
 import os
 import cv2
 import sys
+import yaml
+import os.path
 
 from modules.preprocessing import get_training_set, TRAINING_IMAGES_VIDEOS_SET_FOLDER, save_image_to_folder, \
     GENERATED_DATA_SET_FOLDER, GENERATED_FRAMES_FOLDER
@@ -29,6 +32,12 @@ def get_images(folder):
 
 
 def main():
+    PATH = "model.pt"
+
+    # Create a SummaryWriter instance
+    # SummaryWriter writes event files to log_dir
+    log_dir = "logs"
+    writer = SummaryWriter(log_dir)
     # build the model
     source_Encoder = Encoder(3, True)
     driver_Encoder = Encoder(3, False)
@@ -52,6 +61,20 @@ def main():
     for epoch in range(10):
         generator_losses = []
         discriminator_losses = []
+
+        # Load the existing model
+        if os.path.exists(PATH) and os.path.getsize(PATH) == 0:
+            checkpoint = torch.load(PATH)
+            epoch = checkpoint['epoch']
+            source_Encoder = checkpoint['sourceencoder']
+            driver_Encoder = checkpoint['driver_encoder']
+            discriminator = checkpoint['discriminator']
+            generator = checkpoint['generator']
+            generator_optimiser.load_state_dict(checkpoint['generator_optimizer_state_dict'])
+            discriminator_optimiser.load_state_dict(checkpoint['discriminator_optimizer_state_dict'])
+            generator_losses = checkpoint['generator_loss']
+            discriminator_losses = checkpoint['discriminator_loss']
+
         for i in range(len(training_set)):
             source_image, driving_frames = training_set[i][0], training_set[i][1:]
             for driving_image in driving_frames:
@@ -84,6 +107,22 @@ def main():
                 generator_losses.append(generator_loss.item())
                 discriminator_losses.append(discriminator_loss.item())
 
+                torch.save({
+                    'epoch': epoch,
+                    'sourceencoder': source_Encoder,
+                    'driver_encoder': driver_Encoder,
+                    'discriminator': discriminator,
+                    'generator': generator,
+                    'generator_optimizer_state_dict': generator_optimiser.state_dict(),
+                    'discriminator_optimizer_state_dict': discriminator_optimiser.state_dict(),
+                    'generator_loss': generator_losses,
+                    'discriminator_loss': discriminator_losses,
+                }, PATH)
+
+                # Tensorboard
+                writer.add_scalar('Generator Loss', generator_losses, epoch)
+                writer.add_scalar('Discriminator Loss', discriminator_losses, epoch)
+
                 # save_image_to_folder(
                 #     GENERATED_DATA_SET_FOLDER + "/{}/{}".format(epoch, i) + GENERATED_FRAMES_FOLDER
                 #     , epoch, i,
@@ -96,11 +135,15 @@ def main():
         #         save_image_to_folder(
         #             GENERATED_DATA_SET_FOLDER + '/%#05d' + '/%#05d' + GENERATED_FRAMES_FOLDER % epoch, i,
         #             reconstructed_image)
+
         source_Encoder.eval()
         driver_Encoder.eval()
         lmd.eval()
         discriminator.eval()
 
+    # closing the writer for torchvision
+    writer.flush()
+    writer.close()
 
 
 if __name__ == "__main__":
